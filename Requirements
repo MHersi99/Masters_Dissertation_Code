@@ -1,0 +1,12 @@
+The Code provided can run on python and Google Colab using the following packages and modules runing the following versions
+    python 3.10
+    numpy 1.23.5
+    scipy 1.10.1
+    keras 2.12.0
+    tensorflow 2.12.0
+    skimage 0.19.3
+    sklearn 1.2.2
+    matplotlib 3.7.1
+    pydot 1.4.2
+    arviz 0.15.1
+    
