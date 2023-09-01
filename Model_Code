@@ -70,3 +70,35 @@ model.compile(optimizer='rmsprop',
  
 #Training validation split ratio of 9:1 for Binary Model
  score = model.fit(gene_sim.data, gene_sim.targets, batch_size=64, epochs=1, verbose=1, validation_split=0.10)
+
+#Both Models are trained on 9 iterations leaving 1 iteration for testing, The following is an example on the Multiclass Model
+# at first iteration we build the model
+    if i == 1:
+
+        model = models.Sequential([
+                    layers.Conv2D(filters=32, kernel_size=(8,8), strides=(1,2), activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.0085, l2=0.0085), padding='valid', input_shape=gene_sim.data.shape[1:]),
+                    layers.MaxPooling2D(pool_size=(2,2)),
+                    layers.Conv2D(filters=64, kernel_size=(8,8), strides=(1,2), activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.0085, l2=0.0085,), padding='valid'),
+                    layers.MaxPooling2D(pool_size=(2,2)),
+                    layers.Conv2D(filters=64, kernel_size=(8,8), strides=(1,2), activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.0085, l2=0.0085), padding='valid'),
+                    layers.MaxPooling2D(pool_size=(2,2)),
+                    layers.Flatten(),
+                    layers.Dense(units=256, activation='relu'),
+                    layers.Dense(units=len(gene_sim.classes), activation='softmax')])
+        
+        model.compile(optimizer='adam',
+                    loss='categorical_crossentropy',
+                    metrics=['accuracy'])
+
+        net_LCT = ImaNet(name='[C32+P]+[C64+P]x2+[D256]')
+
+    # training for iterations from 1 to 9
+    if i < 10:
+        score = model.fit(gene_sim.data, gene_sim.targets, batch_size=32, epochs=1, verbose=0, validation_split=0.10)
+        net_LCT.update_scores(score)
+    else:
+        # testing for iteration 10
+        net_LCT.test = model.evaluate(gene_sim.data, gene_sim.targets, batch_size=None, verbose=0)
+        net_LCT.predict(gene_sim, model)
+
+    i += 1
