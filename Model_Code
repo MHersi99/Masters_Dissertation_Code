@@ -1,0 +1,72 @@
+#Multiclass Model Code
+model = models.Sequential([
+                    layers.Conv2D(filters=32, kernel_size=(8,8), strides=(1,2), activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.0085, l2=0.0085), padding='valid', input_shape=gene_sim.data.shape[1:]),
+                    layers.MaxPooling2D(pool_size=(2,2)),
+                    layers.Conv2D(filters=64, kernel_size=(8,8), strides=(1,2), activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.0085, l2=0.0085,), padding='valid'),
+                    layers.MaxPooling2D(pool_size=(2,2)),
+                    layers.Conv2D(filters=64, kernel_size=(8,8), strides=(1,2), activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.0085, l2=0.0085), padding='valid'),
+                    layers.MaxPooling2D(pool_size=(2,2)),
+                    layers.Flatten(),
+                    layers.Dense(units=256, activation='relu'),
+                    layers.Dense(units=len(gene_sim.classes), activation='softmax')])
+model.compile(optimizer='adam',
+                    loss='categorical_crossentropy',
+                    metrics=['accuracy'])
+#Multiclass Gene Sim Filtering Code
+# simluations
+    file_sim = ImaFile(simulations_folder='InsertPathToGeneSimHere' + str(i), nr_samples=198, model_name='Marth-3epoch-CEU')
+
+    gene_sim = file_sim.read_simulations(parameter_name='selection_coeff_hetero', max_nrepl=200)
+
+    # manipulate data:
+    # switch to major/minor allele polarisation
+    # filter our monomorphic sites
+    # sort rows by genetic distance
+    gene_sim.majorminor()
+    gene_sim.filter_freq(0.005)
+    gene_sim.sort('rows_dist')
+    gene_sim.resize((198, 285))
+    gene_sim.convert()
+
+    # use only classes 0,200,300
+    gene_sim.classes = np.array([0,200,300])
+    gene_sim.subset(get_index_classes(gene_sim.targets, gene_sim.classes))
+
+    # randomise data
+    gene_sim.subset(get_index_random(gene_sim))
+
+    # convert targets to categorical data
+    gene_sim.targets = to_categorical(gene_sim.targets)
+#Binary Model Code
+model = models.Sequential([
+                    layers.Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.005, l2=0.005), padding='valid', input_shape=gene_sim.data.shape[1:]),
+                    layers.MaxPooling2D(pool_size=(2,2)),
+                    layers.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.005, l2=0.005), padding='valid'),
+                    layers.MaxPooling2D(pool_size=(2,2)),
+                    layers.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.005, l2=0.005), padding='valid'),
+                    layers.MaxPooling2D(pool_size=(2,2)),
+                    layers.Flatten(),
+                    layers.Dense(units=256, activation='relu'),
+                    layers.Dense(units=1, activation='sigmoid')])
+model.compile(optimizer='rmsprop',
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
+
+#Binary Gene Sim Filtering Code
+    file_sim = ImaFile(simulations_folder='InsertPathToGeneSimHere' + str(i), nr_samples=198, model_name='Marth-3epoch-CEU')
+    gene_sim = file_sim.read_simulations(parameter_name='selection_coeff_hetero', max_nrepl=2000)
+
+    gene_sim.majorminor()
+    gene_sim.filter_freq(0.005)
+    gene_sim.sort('rows_dist')
+    gene_sim.resize((198, 285))
+    gene_sim.convert()
+
+    gene_sim.classes = np.array([200,300]);
+    gene_sim.subset(get_index_random(gene_sim))
+    gene_sim.targets = to_binary(gene_sim.targets)
+ #Training validation split ratio of 9:1 for Multiclass Model
+  score = model.fit(gene_sim.data, gene_sim.targets, batch_size=32, epochs=1, verbose=0, validation_split=0.10)
+ 
+#Training validation split ratio of 9:1 for Binary Model
+ score = model.fit(gene_sim.data, gene_sim.targets, batch_size=64, epochs=1, verbose=1, validation_split=0.10)
